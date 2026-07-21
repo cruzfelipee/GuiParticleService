@@ -26,7 +26,7 @@ function Utils.getColorAtSequenceTime(sequence: ColorSequence, time: number): Co
 		end
 
 		if i == 1 then --target time is before or at the first keypoint, return the first keypoint's value
-			return v.Value 
+			return v.Value
 		end
 
 		local prev = sequence.Keypoints[i - 1]
