@@ -1,0 +1,46 @@
+name: Build Release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+    paths:
+      - "wally.toml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and release
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Rokit
+        uses: CompeyDev/setup-rokit@v0.1.0
+
+      - name: Build Roblox model
+        run: rojo build -o GuiParticleService.rbxm
+
+      - name: Package Wally source
+        run: wally package --output source.zip
+
+      - name: Read release version
+        run: |
+          VERSION="$(sed -nE 's/^version = "([^"]+)"/\1/p' wally.toml | head -n 1)"
+          test -n "$VERSION"
+          echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" GuiParticleService.rbxm source.zip --target "$GITHUB_SHA" --generate-notes
