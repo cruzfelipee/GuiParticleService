@@ -25,7 +25,7 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Set up Rokit
-        uses: CompeyDev/setup-rokit@v0.1.0
+        uses: CompeyDev/setup-rokit@v0.1.2
 
       - name: Build Roblox model
         run: rojo build -o GuiParticleService.rbxm
