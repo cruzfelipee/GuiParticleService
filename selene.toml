@@ -1,0 +1,5 @@
+std = "roblox"
+exclude = ["*Network.luau"]
+
+[lints]
+incorrect_standard_library_use = "allow"

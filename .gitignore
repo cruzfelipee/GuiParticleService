@@ -1,0 +1,14 @@
+# Project place file
+/Projectile.rbxlx
+
+# Build
+*.rbxm
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+sourcemap.json
+
+# selene std
+roblox.yml

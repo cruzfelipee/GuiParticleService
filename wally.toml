@@ -1,0 +1,11 @@
+[package]
+name = "felipe/projectile"
+description = "Lightweight projectile system for Roblox"
+license = "MIT"
+authors = ["Felipe"]
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+exclude = ["rokit.toml", "README.md", "default.project.json"]
+
+[dependencies]

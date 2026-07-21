@@ -1,0 +1,24 @@
+name: Style
+
+on:
+  pull_request:
+
+jobs:
+  stylua:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up rokit
+        run: |
+          curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+          export PATH="$HOME/.rokit/bin:$PATH"
+          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
+          rokit install --no-trust-check
+
+      - name: Check style with StyLua
+        run: |
+          stylua --check src --glob '!*Network.luau'
