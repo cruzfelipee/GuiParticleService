@@ -10,7 +10,6 @@ exclude = [
     ".github",
     ".gitignore",
     ".luaurc",
-    "default.project.json",
     "README.md",
     "rokit.toml",
     "selene.toml",
