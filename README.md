@@ -166,7 +166,7 @@ stylua --check src
 To build a Roblox place from the project tree:
 
 ```sh
-rojo build -o "GuiParticleService.rbxlx"
+rojo build -o "GuiParticleService.rbxm"
 ```
 
 To sync the project with Roblox Studio:
