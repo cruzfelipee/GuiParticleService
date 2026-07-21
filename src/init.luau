@@ -373,7 +373,7 @@ function GuiParticleService.fromEmitter(
 		particleEmitter.Changed:Connect(function(property: string)
 			local newValue = particleEmitter[property]
 
-			if not emitter.properties[property] then
+			if emitter.properties[property] == nil then
 				return
 			end
 
