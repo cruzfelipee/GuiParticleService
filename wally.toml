@@ -1,11 +1,19 @@
 [package]
-name = "felipe/projectile"
-description = "Lightweight projectile system for Roblox"
+name = "cruzfelipee/gui_particle_service"
+description = "UI Particle Library focused on ease of use and similarity to the default 3D Particle Emitter"
 license = "MIT"
 authors = ["Felipe"]
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
-exclude = ["rokit.toml", "README.md", "default.project.json"]
+exclude = [
+    ".github",
+    ".gitignore",
+    ".luaurc",
+    "default.project.json",
+    "README.md",
+    "rokit.toml",
+    "selene.toml",
+    ]
 
 [dependencies]
