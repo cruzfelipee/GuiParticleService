@@ -1,5 +1,5 @@
 {
-  "name": "Projectile",
+  "name": "GuiParticleService",
   "tree": {
     "$path": "src"
   }
