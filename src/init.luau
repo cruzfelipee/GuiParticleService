@@ -226,9 +226,9 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 					startRotation = Utils.getNumberInRange(self.properties.Rotation, math.random()),
 					rotationSpeed = Utils.getNumberInRange(self.properties.RotSpeed, math.random()),
 					startVelocity = Vector2.new(
-						Utils.getNumberInRange(self.properties.Speed, (math.random() - 0.5) * 2)
+						Utils.getNumberInRange(self.properties.Speed, math.random())
 							* math.cos(velocityAngle + math.rad(self.properties.SpreadAngle * (math.random() - 0.5))),
-						Utils.getNumberInRange(self.properties.Speed, (math.random() - 0.5) * 2)
+						Utils.getNumberInRange(self.properties.Speed, math.random())
 							* math.sin(velocityAngle + math.rad(self.properties.SpreadAngle * (math.random() - 0.5)))
 					),
 					sizeEnvelope = math.random(),
@@ -350,7 +350,9 @@ function GuiParticleService.fromEmitter(
 		Enabled = if emitterParameters.Enabled ~= nil then emitterParameters.Enabled else particleEmitter.Enabled,
 
 		Lifetime = emitterParameters.Lifetime or particleEmitter.Lifetime,
-		LockedToPart = if emitterParameters.LockedToPart ~= nil then emitterParameters.LockedToPart else particleEmitter.LockedToPart,
+		LockedToPart = if emitterParameters.LockedToPart ~= nil
+			then emitterParameters.LockedToPart
+			else particleEmitter.LockedToPart,
 		Orientation = emitterParameters.Orientation or particleEmitter.Orientation,
 		Rate = emitterParameters.Rate or particleEmitter.Rate,
 		Rotation = emitterParameters.Rotation or particleEmitter.Rotation,
