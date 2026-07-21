@@ -5,9 +5,11 @@ const VELOCITY_ANGLES = {
 	[Enum.NormalId.Left] = math.rad(180),
 	[Enum.NormalId.Right] = math.rad(0),
 }
+const DRAG_EPSILON = 1e-6 --minimum drag magnitude to avoid divisions with numbers close to zero, which can cause large displacements due to floating point precision
 
-local RunService = game:GetService("RunService")
-local Utils = require(script.Utils)
+const RunService = game:GetService("RunService")
+
+const Utils = require(script.Utils)
 
 type EmitterSettings = {
 	Acceleration: Vector2,
@@ -121,14 +123,17 @@ type Emitter = {
 	StepAll: (self: Emitter) -> (),
 }
 
+--Storage for polled image instances, so they can be later reused instead of destroyed and recreated.
 local polledParticlesFolder = Instance.new("Folder")
 polledParticlesFolder.Name = "PolledParticles"
 polledParticlesFolder.Parent = script
 
 local emitters: { Emitter } = {}
 
-local DRAG_EPSILON = 1e-6 --minimum drag magnitude to avoid divisions with numbers close to zero, which can cause large displacements due to floating point precision
-local function getPosition(
+--[[
+	Calculates the position of a particle at a given time, based on its motion parameters
+]]
+const function getPosition(
 	startPosition: Vector2,
 	elapsedTime: number,
 	startVelocity: Vector2,
@@ -152,6 +157,12 @@ end
 
 local GuiParticleService = {}
 
+--[[
+	Starts a new emitter with the given parameters. The emitter will continue to emit emitter.properties.Rate particles per second until it is either destroyed or disabled.
+	
+	@param emitterParameters The parameters to use for the emitter.
+	@return An Emitter object that can be used to control the emitter.
+]]
 function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 	local emitter: Emitter = {
 		properties = {
@@ -304,6 +315,14 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 	return emitter
 end
 
+--[[
+	Starts a new emitter using the properties of a Roblox ParticleEmitter.
+
+	@param particleEmitter The ParticleEmitter to convert into a GuiParticleService Emitter.
+	@param _emitterParameters Optional parameters to override the properties of the ParticleEmitter.
+	@param bound If true, the Emitter will attempt to update its properties when the ParticleEmitter's properties change to match the original emitter. Destroying the original emitter will destroy the GuiParticleService Emitter. Defaults to false.
+	@return An Emitter object that can be used to control the emitter.
+]]
 function GuiParticleService.fromEmitter(
 	particleEmitter: ParticleEmitter,
 	_emitterParameters: EmitterParameters?,
@@ -364,14 +383,20 @@ function GuiParticleService.fromEmitter(
 				print(property, "needs to be manually converted")
 			end
 		end)
+
+		particleEmitter.Destroying:Connect(function()
+			emitter:Destroy()
+		end)
 	end
 
 	return emitter
 end
 
+--Controls the emission and updating of all emitters.
 RunService:BindToRenderStep("UpdateGuiParticleServiceParticles", Enum.RenderPriority.Last.Value, function(delta: number)
 	for _, v in emitters do
 		debug.profilebegin("GuiParticleService.Emits")
+		--Emits particles based on the emitter's rate and the time since the last frame.
 		if v.properties.Enabled then
 			local finalDelta = math.min(delta, MAX_EMISSION_DELTA_TIME) + v.emitTimeAccumulator
 
@@ -382,6 +407,7 @@ RunService:BindToRenderStep("UpdateGuiParticleServiceParticles", Enum.RenderPrio
 		debug.profileend()
 
 		debug.profilebegin("GuiParticleService.StepAll")
+		--Step all particles, updating their images properties to simulate particle-like behaviour.
 		v:StepAll()
 		debug.profileend()
 	end
