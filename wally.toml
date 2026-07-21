@@ -2,7 +2,7 @@
 name = "cruzfelipee/gui-particle-service"
 description = "UI Particle Library focused on ease of use and similarity to the default 3D Particle Emitter"
 license = "MIT"
-authors = ["Felipe"]
+authors = ["cruzfelipee"]
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"

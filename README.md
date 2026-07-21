@@ -27,7 +27,7 @@ Add the package to your project's `wally.toml`:
 
 ```toml
 [dependencies]
-GuiParticleService = "cruzfelipee/gui_particle_service@0.1.0"
+gui-particle-service = "cruzfelipee/gui-particle-service@0.1.0"
 ```
 
 Install dependencies:
