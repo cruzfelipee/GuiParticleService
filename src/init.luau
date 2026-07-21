@@ -347,10 +347,10 @@ function GuiParticleService.fromEmitter(
 		Color = emitterParameters.Color or particleEmitter.Color,
 		Drag = emitterParameters.Drag or particleEmitter.Drag,
 		EmissionDirection = emitterParameters.EmissionDirection or particleEmitter.EmissionDirection,
-		Enabled = emitterParameters.Enabled or particleEmitter.Enabled,
+		Enabled = if emitterParameters.Enabled ~= nil then emitterParameters.Enabled else particleEmitter.Enabled,
 
 		Lifetime = emitterParameters.Lifetime or particleEmitter.Lifetime,
-		LockedToPart = emitterParameters.LockedToPart or particleEmitter.LockedToPart,
+		LockedToPart = if emitterParameters.LockedToPart ~= nil then emitterParameters.LockedToPart else particleEmitter.LockedToPart,
 		Orientation = emitterParameters.Orientation or particleEmitter.Orientation,
 		Rate = emitterParameters.Rate or particleEmitter.Rate,
 		Rotation = emitterParameters.Rotation or particleEmitter.Rotation,
