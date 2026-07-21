@@ -11,6 +11,7 @@ exclude = [
     ".gitignore",
     ".luaurc",
     "default.project.json",
+    "LICENSE",
     "README.md",
     "rokit.toml",
     "selene.toml",
