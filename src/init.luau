@@ -269,7 +269,7 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 
 		StepAll = function(self)
 			for i, v in self.renderedParticles do
-				local timeAlive = tick() - v.spawnTime
+				local timeAlive = tick() * self.properties.TimeScale - v.spawnTime * self.properties.TimeScale
 
 				if timeAlive >= v.lifetime then
 					table.insert(self.polledParticles, v.particleImage)
@@ -399,8 +399,8 @@ RunService:BindToRenderStep("UpdateGuiParticleServiceParticles", Enum.RenderPrio
 	for _, v in emitters do
 		debug.profilebegin("GuiParticleService.Emits")
 		--Emits particles based on the emitter's rate and the time since the last frame.
-		if v.properties.Enabled then
-			local finalDelta = math.min(delta, MAX_EMISSION_DELTA_TIME) + v.emitTimeAccumulator
+		if v.properties.Enabled and v.properties.Rate > 0 then
+			local finalDelta = math.min(delta * v.properties.TimeScale, MAX_EMISSION_DELTA_TIME) + v.emitTimeAccumulator
 
 			v:Emit(v.properties.Rate * finalDelta)
 
