@@ -1,0 +1,159 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GuiParticleService = require(ReplicatedStorage.GuiParticleService)
+
+local PARTICLE_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "GuiParticleServiceDemo"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local background = Instance.new("Frame")
+background.Name = "Background"
+background.Size = UDim2.fromScale(1, 1)
+background.BackgroundColor3 = Color3.fromRGB(17, 19, 30)
+background.BorderSizePixel = 0
+background.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -48, 0, 58)
+title.Position = UDim2.fromOffset(24, 20)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.Text = "GuiParticleService demo"
+title.TextColor3 = Color3.fromRGB(240, 244, 255)
+title.TextSize = 28
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = background
+
+local subtitle = Instance.new("TextLabel")
+subtitle.Size = UDim2.new(1, -48, 0, 28)
+subtitle.Position = UDim2.fromOffset(24, 68)
+subtitle.BackgroundTransparency = 1
+subtitle.Font = Enum.Font.Gotham
+subtitle.Text = "Three continuously emitting GUI particle effects"
+subtitle.TextColor3 = Color3.fromRGB(158, 170, 200)
+subtitle.TextSize = 16
+subtitle.TextXAlignment = Enum.TextXAlignment.Left
+subtitle.Parent = background
+
+local function makeParticleArea(name: string, position: UDim2, color: Color3): Frame
+	local area = Instance.new("Frame")
+	area.Name = name
+	area.AnchorPoint = Vector2.new(0.5, 0.5)
+	area.Size = UDim2.fromOffset(250, 250)
+	area.Position = position
+	area.BackgroundColor3 = color:Lerp(Color3.fromRGB(28, 31, 48), 0.8)
+	area.BorderSizePixel = 0
+	area.ClipsDescendants = false
+	area.Parent = background
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 16)
+	corner.Parent = area
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -24, 0, 32)
+	label.Position = UDim2.fromOffset(12, 12)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamMedium
+	label.Text = name
+	label.TextColor3 = Color3.fromRGB(235, 238, 255)
+	label.TextSize = 18
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.ZIndex = 2
+	label.Parent = area
+
+	return area
+end
+
+local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.2, 0.57), Color3.fromRGB(244, 129, 45))
+local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.5, 0.57), Color3.fromRGB(98, 184, 255))
+local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.8, 0.57), Color3.fromRGB(195, 111, 255))
+
+local embers = GuiParticleService.start({
+	Parent = embersArea,
+	Texture = PARTICLE_TEXTURE,
+	Rate = 24,
+	Lifetime = NumberRange.new(1.2, 2.1),
+	Speed = NumberRange.new(48, 100),
+	EmissionDirection = Enum.NormalId.Top,
+	SpreadAngle = 50,
+	Acceleration = Vector2.new(0, 30),
+	Drag = 1.5,
+	Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 16, 5),
+		NumberSequenceKeypoint.new(0.75, 9),
+		NumberSequenceKeypoint.new(1, 2),
+	}),
+	Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(0.7, 0.25),
+		NumberSequenceKeypoint.new(1, 1),
+	}),
+	Color = ColorSequence.new(Color3.fromRGB(255, 232, 116), Color3.fromRGB(255, 76, 42)),
+	RotSpeed = NumberRange.new(-140, 140),
+	ZOffset = 3,
+})
+
+local snow = GuiParticleService.start({
+	Parent = snowArea,
+	Texture = PARTICLE_TEXTURE,
+	Rate = 18,
+	Lifetime = NumberRange.new(1.5, 2.6),
+	Speed = NumberRange.new(35, 65),
+	EmissionDirection = Enum.NormalId.Bottom,
+	SpreadAngle = 28,
+	Acceleration = Vector2.new(18, 8),
+	Drag = 0.2,
+	Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 7, 3),
+		NumberSequenceKeypoint.new(1, 13, 3),
+	}),
+	Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(0.15, 0),
+		NumberSequenceKeypoint.new(0.8, 0.15),
+		NumberSequenceKeypoint.new(1, 1),
+	}),
+	Color = ColorSequence.new(Color3.fromRGB(220, 242, 255)),
+	Rotation = NumberRange.new(0, 0),
+	RotSpeed = NumberRange.new(-25, 25),
+	ZOffset = 3,
+})
+
+-- This emitter is converted to a 2D GUI emitter by GuiParticleService.fromEmitter.
+local sparksSource = Instance.new("ParticleEmitter")
+sparksSource.Name = "SparksSource"
+sparksSource.Texture = PARTICLE_TEXTURE
+sparksSource.Rate = 20
+sparksSource.Lifetime = NumberRange.new(0.7, 1.25)
+sparksSource.Speed = NumberRange.new(90, 145)
+sparksSource.EmissionDirection = Enum.NormalId.Right
+-- fromEmitter converts the native Vector2 spread to a scalar using its magnitude.
+sparksSource.SpreadAngle = Vector2.new(70, 0)
+sparksSource.Acceleration = Vector3.new(-55, 25, 0)
+sparksSource.Drag = 2
+sparksSource.Size = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 12, 4),
+	NumberSequenceKeypoint.new(1, 1),
+})
+sparksSource.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 0),
+	NumberSequenceKeypoint.new(0.65, 0.2),
+	NumberSequenceKeypoint.new(1, 1),
+})
+sparksSource.Color = ColorSequence.new(Color3.fromRGB(242, 194, 255), Color3.fromRGB(143, 89, 255))
+sparksSource.RotSpeed = NumberRange.new(-300, 300)
+sparksSource.ZOffset = 3
+sparksSource.Parent = sparksArea
+
+local sparks = GuiParticleService.fromEmitter(sparksSource, nil, true)
+
+-- Add a visible burst immediately, so the demo has particles before the first rate-based emissions.
+embers:Emit(20)
+snow:Emit(16)
+sparks:Emit(20)

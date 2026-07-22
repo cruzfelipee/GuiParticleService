@@ -1,0 +1,21 @@
+{
+	"name": "GuiParticleServiceTesting",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"GuiParticleService": {
+				"$path": "src"
+			}
+		},
+        "Players": {
+            "$properties": {
+                "CharacterAutoLoads": false
+            }
+        },
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"$path": "testing"
+			}
+		}
+	}
+}
