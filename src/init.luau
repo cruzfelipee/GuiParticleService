@@ -245,7 +245,10 @@ const function getParticleTween(emitter: Emitter, image: ImageLabel, lifetime: n
 		firstTween = firstTween or currentTween
 
 		if lastTween then
-			lastTween.Completed:Once(function()
+			lastTween.Completed:Once(function(playbackState)
+				if playbackState == Enum.PlaybackState.Cancelled then
+					return
+				end
 				currentTween:Play()
 			end)
 		end
