@@ -9,6 +9,7 @@ registry = "https://github.com/UpliftGames/wally-index"
 repository = "https://github.com/cruzfelipee/GuiParticleService"
 include = [
     "src",
+    "src/**",
     "LICENSE",
     "wally.toml",
     "default.project.json"
