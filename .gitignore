@@ -3,6 +3,7 @@
 
 # Build
 *.rbxm
+*.rbxlx
 
 # Roblox Studio lock files
 /*.rbxlx.lock
