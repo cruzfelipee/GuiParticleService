@@ -102,6 +102,7 @@ type Particle = {
 
 	spawnTime: number,
 	lifetime: number,
+	currentTween: Tween?,
 
 	particleImage: ImageLabel,
 }
@@ -213,8 +214,9 @@ end
 	Creates a single tween chain to control some particle properties over its lifetime.
 	The tween chain needs to be recreated for every particle since lifetime and envelopes are randomized per particle.
 ]]
-const function getParticleTween(emitter: Emitter, image: ImageLabel, lifetime: number): Tween?
-	local goals = getParticleTweenGoals(emitter, lifetime)
+const function getParticleTween(emitter: Emitter, particle: Particle): Tween?
+	local image = particle.particleImage
+	local goals = getParticleTweenGoals(emitter, particle.lifetime)
 
 	local times = {}
 	for time in goals do
@@ -240,7 +242,11 @@ const function getParticleTween(emitter: Emitter, image: ImageLabel, lifetime: n
 		local lastTweenTime = times[i - 1]
 
 		local currentTween =
-			TweenService:Create(image, TweenInfo.new((currentTime - lastTweenTime) * lifetime, Enum.EasingStyle.Linear), currentGoal) --seems to be the bottleneck of performance,
+			TweenService:Create(
+				image,
+				TweenInfo.new((currentTime - lastTweenTime) * particle.lifetime, Enum.EasingStyle.Linear),
+				currentGoal
+			) --seems to be the bottleneck of performance,
 
 		firstTween = firstTween or currentTween
 
@@ -249,6 +255,8 @@ const function getParticleTween(emitter: Emitter, image: ImageLabel, lifetime: n
 				if playbackState == Enum.PlaybackState.Cancelled then
 					return
 				end
+
+				particle.currentTween = currentTween
 				currentTween:Play()
 			end)
 		end
@@ -323,9 +331,7 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 				local velocityAngle = VELOCITY_ANGLES[self.properties.EmissionDirection]
 				assert(velocityAngle, "EmissionDirection must be Top, Bottom, Left or Right")
 
-				local lifetime = Utils.getNumberInRange(self.properties.Lifetime, math.random())
-
-				table.insert(self.renderedParticles, {
+				local particle: Particle = {
 					startPosition = Vector2.new(math.random() * absoluteSize.X, math.random() * absoluteSize.Y)
 						+ (if self.properties.LockedToPart then Vector2.zero else absolutePosition),
 					startVelocity = Vector2.new(
@@ -336,11 +342,15 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 					),
 					spawnTime = tick(),
 					particleImage = image,
-					lifetime = lifetime,
-				})
+					lifetime = Utils.getNumberInRange(self.properties.Lifetime, math.random()),
+					currentTween = nil,
+				}
 
-				local tween = getParticleTween(self, image, lifetime)
+				table.insert(self.renderedParticles, particle)
+
+				local tween = getParticleTween(self, particle)
 				if tween then
+					particle.currentTween = tween
 					tween:Play()
 				end
 
@@ -350,6 +360,11 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 
 		Clear = function(self)
 			for _, v in self.renderedParticles do
+				if v.currentTween then
+					v.currentTween:Cancel()
+					v.currentTween = nil
+				end
+
 				table.insert(self.polledParticles, v.particleImage)
 
 				v.particleImage.Parent = polledParticlesFolder
