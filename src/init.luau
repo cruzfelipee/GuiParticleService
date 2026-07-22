@@ -8,6 +8,7 @@ const VELOCITY_ANGLES = {
 const DRAG_EPSILON = 1e-6 --minimum drag magnitude to avoid divisions with numbers close to zero, which can cause large displacements due to floating point precision
 
 const RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 const Utils = require(script.Utils)
 
@@ -98,12 +99,6 @@ type EmitterParameters = {
 type Particle = {
 	startVelocity: Vector2,
 	startPosition: Vector2,
-	startRotation: number,
-	rotationSpeed: number,
-
-	sizeEnvelope: number,
-	squashEnvelope: number,
-	transparencyEnvelope: number,
 
 	spawnTime: number,
 	lifetime: number,
@@ -155,6 +150,112 @@ const function getPosition(
 	return startPosition + velocityDisplacement + accelerationDisplacement
 end
 
+type ParticleTweenGoal = {
+	ImageColor3: Color3,
+	ImageTransparency: number,
+	Size: UDim2,
+	Rotation: number,
+	[string]: any,
+}
+
+--[[
+	Determine the state of the particle properties at each keypoint in the lifetime of the particle, based on the emitter's properties.
+]]
+const function getParticleTweenGoals(emitter: Emitter, lifetime: number)
+	local transparencyEnvelope = math.random()
+	local sizeEnvelope = math.random()
+	local startRotation = Utils.getNumberInRange(emitter.properties.Rotation, math.random())
+	local rotationSpeed = Utils.getNumberInRange(emitter.properties.RotSpeed, math.random())
+
+	local goals: { [number]: ParticleTweenGoal } = {}
+
+	for _, colorKeypoint in emitter.properties.Color.Keypoints do
+		local size = Utils.getNumberAtSequenceTime(emitter.properties.Size, colorKeypoint.Time, sizeEnvelope)
+		goals[colorKeypoint.Time] = {
+			ImageColor3 = colorKeypoint.Value,
+			ImageTransparency = Utils.getNumberAtSequenceTime(
+				emitter.properties.Transparency,
+				colorKeypoint.Time,
+				transparencyEnvelope
+			),
+			Size = UDim2.fromOffset(size, size),
+			Rotation = startRotation + rotationSpeed * colorKeypoint.Time * lifetime,
+		}
+	end
+
+	for _, transparencyKeypoint in emitter.properties.Transparency.Keypoints do
+		local size = Utils.getNumberAtSequenceTime(emitter.properties.Size, transparencyKeypoint.Time, sizeEnvelope)
+		goals[transparencyKeypoint.Time] = {
+			ImageColor3 = Utils.getColorAtSequenceTime(emitter.properties.Color, transparencyKeypoint.Time),
+			ImageTransparency = transparencyKeypoint.Value,
+			Size = UDim2.fromOffset(size, size),
+			Rotation = startRotation + rotationSpeed * transparencyKeypoint.Time * lifetime,
+		}
+	end
+
+	for _, sizeKeypoint in emitter.properties.Size.Keypoints do
+		goals[sizeKeypoint.Time] = {
+			ImageColor3 = Utils.getColorAtSequenceTime(emitter.properties.Color, sizeKeypoint.Time),
+			ImageTransparency = Utils.getNumberAtSequenceTime(
+				emitter.properties.Transparency,
+				sizeKeypoint.Time,
+				transparencyEnvelope
+			),
+			Size = UDim2.fromOffset(sizeKeypoint.Value, sizeKeypoint.Value),
+			Rotation = startRotation + rotationSpeed * sizeKeypoint.Time * lifetime,
+		}
+	end
+
+	return goals
+end
+
+--[[
+	Creates a single tween chain to control some particle properties over its lifetime.
+	The tween chain needs to be recreated for every particle since lifetime and envelopes are randomized per particle.
+]]
+const function getParticleTween(emitter: Emitter, image: ImageLabel, lifetime: number): Tween?
+	local goals = getParticleTweenGoals(emitter, lifetime)
+
+	local times = {}
+	for time in goals do
+		table.insert(times, time)
+	end
+	table.sort(times)
+
+	local firstTween: Tween
+	local lastTween: Tween
+
+	for i, currentTime in times do
+		local currentGoal = goals[currentTime]
+
+		if i == 1 then --sets properties to start
+			image.ImageTransparency = currentGoal.ImageTransparency
+			image.Size = currentGoal.Size
+			image.Rotation = currentGoal.Rotation
+			image.ImageColor3 = currentGoal.ImageColor3
+
+			continue
+		end
+
+		local lastTweenTime = times[i - 1]
+
+		local currentTween =
+			TweenService:Create(image, TweenInfo.new(currentTime - lastTweenTime, Enum.EasingStyle.Linear), currentGoal) --seems to be the bottleneck of performance,
+
+		firstTween = firstTween or currentTween
+
+		if lastTween then
+			lastTween.Completed:Once(function()
+				currentTween:Play()
+			end)
+		end
+
+		lastTween = currentTween
+	end
+
+	return firstTween
+end
+
 local GuiParticleService = {}
 
 --[[
@@ -197,6 +298,9 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 		emitTimeAccumulator = 0,
 
 		Emit = function(self, count)
+			local absolutePosition = emitterParameters.Parent.AbsolutePosition
+			local absoluteSize = emitterParameters.Parent.AbsoluteSize
+
 			for _ = 1, count do
 				local image = table.remove(self.polledParticles)
 				if not image then
@@ -216,28 +320,28 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 				local velocityAngle = VELOCITY_ANGLES[self.properties.EmissionDirection]
 				assert(velocityAngle, "EmissionDirection must be Top, Bottom, Left or Right")
 
+				local lifetime = Utils.getNumberInRange(self.properties.Lifetime, math.random())
+
 				table.insert(self.renderedParticles, {
-					startPosition = Vector2.new(
-						math.random() * self.properties.Parent.AbsoluteSize.X,
-						math.random() * self.properties.Parent.AbsoluteSize.Y
-					) + (if self.properties.LockedToPart
-						then Vector2.zero
-						else self.properties.Parent.AbsolutePosition),
-					startRotation = Utils.getNumberInRange(self.properties.Rotation, math.random()),
-					rotationSpeed = Utils.getNumberInRange(self.properties.RotSpeed, math.random()),
+					startPosition = Vector2.new(math.random() * absoluteSize.X, math.random() * absoluteSize.Y)
+						+ (if self.properties.LockedToPart then Vector2.zero else absolutePosition),
 					startVelocity = Vector2.new(
 						Utils.getNumberInRange(self.properties.Speed, math.random())
 							* math.cos(velocityAngle + math.rad(self.properties.SpreadAngle * (math.random() - 0.5))),
 						Utils.getNumberInRange(self.properties.Speed, math.random())
 							* math.sin(velocityAngle + math.rad(self.properties.SpreadAngle * (math.random() - 0.5)))
 					),
-					sizeEnvelope = math.random(),
-					squashEnvelope = math.random(),
-					transparencyEnvelope = math.random(),
 					spawnTime = tick(),
 					particleImage = image,
-					lifetime = Utils.getNumberInRange(self.properties.Lifetime, math.random()),
+					lifetime = lifetime,
 				})
+
+				local tween = getParticleTween(self, image, lifetime)
+				if tween then
+					tween:Play()
+				else
+					warn("Failed to create particle tween")
+				end
 
 				image.Parent = self.properties.Parent
 			end
@@ -268,6 +372,8 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 		end,
 
 		StepAll = function(self)
+			local absolutePosition = emitterParameters.Parent.AbsolutePosition
+
 			for i, v in self.renderedParticles do
 				local timeAlive = tick() * self.properties.TimeScale - v.spawnTime * self.properties.TimeScale
 
@@ -280,12 +386,6 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 					continue
 				end
 
-				local normalizedTime = timeAlive / v.lifetime
-
-				v.particleImage.ImageTransparency =
-					Utils.getNumberAtSequenceTime(self.properties.Transparency, normalizedTime, v.transparencyEnvelope)
-				v.particleImage.ImageColor3 = Utils.getColorAtSequenceTime(self.properties.Color, normalizedTime)
-
 				local position = getPosition(
 					v.startPosition,
 					timeAlive,
@@ -294,18 +394,12 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 					self.properties.Drag
 				)
 
-				v.particleImage.Rotation = v.startRotation + (v.rotationSpeed * timeAlive)
-
 				if self.properties.LockedToPart then
 					v.particleImage.Position = UDim2.fromOffset(position.X, position.Y)
 				else
-					local parentPosition = self.properties.Parent.AbsolutePosition
 					v.particleImage.Position = UDim2.fromOffset(position.X, position.Y)
-						- UDim2.fromOffset(parentPosition.X, parentPosition.Y)
+						- UDim2.fromOffset(absolutePosition.X, absolutePosition.Y)
 				end
-
-				local size = Utils.getNumberAtSequenceTime(self.properties.Size, normalizedTime, v.sizeEnvelope)
-				v.particleImage.Size = UDim2.fromOffset(size, size)
 			end
 		end,
 	}
@@ -386,7 +480,7 @@ function GuiParticleService.fromEmitter(
 			end
 		end)
 
-		particleEmitter.Destroying:Connect(function()
+		particleEmitter.Destroying:Once(function()
 			emitter:Destroy()
 		end)
 	end
