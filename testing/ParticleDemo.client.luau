@@ -70,6 +70,70 @@ local function makeParticleArea(name: string, position: UDim2, color: Color3): F
 	return area
 end
 
+local function addEmitterControls(area: Frame, emitter)
+	local clearButton = Instance.new("TextButton")
+	clearButton.Size = UDim2.new(1, -24, 0, 28)
+	clearButton.Position = UDim2.fromOffset(12, 168)
+	clearButton.BackgroundColor3 = Color3.fromRGB(76, 49, 68)
+	clearButton.BorderSizePixel = 0
+	clearButton.Font = Enum.Font.GothamMedium
+	clearButton.Text = "Clear"
+	clearButton.TextColor3 = Color3.fromRGB(255, 232, 240)
+	clearButton.TextSize = 14
+	clearButton.ZIndex = 3
+	clearButton.Parent = area
+
+	local clearCorner = Instance.new("UICorner")
+	clearCorner.CornerRadius = UDim.new(0, 6)
+	clearCorner.Parent = clearButton
+
+	local countInput = Instance.new("TextBox")
+	countInput.Size = UDim2.new(1, -108, 0, 32)
+	countInput.Position = UDim2.fromOffset(12, 204)
+	countInput.BackgroundColor3 = Color3.fromRGB(35, 39, 57)
+	countInput.BorderSizePixel = 0
+	countInput.ClearTextOnFocus = false
+	countInput.Font = Enum.Font.Gotham
+	countInput.PlaceholderText = "Particle count"
+	countInput.PlaceholderColor3 = Color3.fromRGB(132, 140, 166)
+	countInput.Text = "20"
+	countInput.TextColor3 = Color3.fromRGB(240, 243, 255)
+	countInput.TextSize = 14
+	countInput.ZIndex = 3
+	countInput.Parent = area
+
+	local inputCorner = Instance.new("UICorner")
+	inputCorner.CornerRadius = UDim.new(0, 6)
+	inputCorner.Parent = countInput
+
+	local emitButton = Instance.new("TextButton")
+	emitButton.Size = UDim2.fromOffset(90, 32)
+	emitButton.Position = UDim2.new(1, -102, 0, 204)
+	emitButton.BackgroundColor3 = Color3.fromRGB(68, 102, 184)
+	emitButton.BorderSizePixel = 0
+	emitButton.Font = Enum.Font.GothamMedium
+	emitButton.Text = "Emit"
+	emitButton.TextColor3 = Color3.fromRGB(242, 246, 255)
+	emitButton.TextSize = 14
+	emitButton.ZIndex = 3
+	emitButton.Parent = area
+
+	local emitCorner = Instance.new("UICorner")
+	emitCorner.CornerRadius = UDim.new(0, 6)
+	emitCorner.Parent = emitButton
+
+	clearButton.Activated:Connect(function()
+		emitter:Clear()
+	end)
+
+	emitButton.Activated:Connect(function()
+		local count = tonumber(countInput.Text)
+		if count and count > 0 then
+			emitter:Emit(math.floor(count))
+		end
+	end)
+end
+
 local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.27, 0.4), Color3.fromRGB(244, 129, 45))
 local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.73, 0.4), Color3.fromRGB(98, 184, 255))
 local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.27, 0.76), Color3.fromRGB(195, 111, 255))
@@ -204,6 +268,12 @@ sparksSource.ZOffset = 3
 sparksSource.Parent = sparksArea
 
 local sparks = GuiParticleService.fromEmitter(sparksSource, nil, true)
+
+addEmitterControls(embersArea, embers)
+addEmitterControls(snowArea, snow)
+addEmitterControls(sparksArea, sparks)
+addEmitterControls(staticArea, staticStars)
+addEmitterControls(rainbowArea, rainbow)
 
 -- Add a visible burst immediately, so the demo has particles before the first rate-based emissions.
 embers:Emit(20)
