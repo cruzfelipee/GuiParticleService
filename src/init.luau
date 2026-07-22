@@ -240,7 +240,7 @@ const function getParticleTween(emitter: Emitter, image: ImageLabel, lifetime: n
 		local lastTweenTime = times[i - 1]
 
 		local currentTween =
-			TweenService:Create(image, TweenInfo.new(currentTime - lastTweenTime, Enum.EasingStyle.Linear), currentGoal) --seems to be the bottleneck of performance,
+			TweenService:Create(image, TweenInfo.new((currentTime - lastTweenTime) * lifetime, Enum.EasingStyle.Linear), currentGoal) --seems to be the bottleneck of performance,
 
 		firstTween = firstTween or currentTween
 
