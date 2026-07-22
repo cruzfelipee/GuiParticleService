@@ -339,8 +339,6 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 				local tween = getParticleTween(self, image, lifetime)
 				if tween then
 					tween:Play()
-				else
-					warn("Failed to create particle tween")
 				end
 
 				image.Parent = self.properties.Parent

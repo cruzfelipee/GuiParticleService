@@ -34,7 +34,7 @@ subtitle.Size = UDim2.new(1, -48, 0, 28)
 subtitle.Position = UDim2.fromOffset(24, 68)
 subtitle.BackgroundTransparency = 1
 subtitle.Font = Enum.Font.Gotham
-subtitle.Text = "Four continuously emitting GUI particle effects"
+subtitle.Text = "Five continuously emitting GUI particle effects"
 subtitle.TextColor3 = Color3.fromRGB(158, 170, 200)
 subtitle.TextSize = 16
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -73,6 +73,7 @@ end
 local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.27, 0.4), Color3.fromRGB(244, 129, 45))
 local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.73, 0.4), Color3.fromRGB(98, 184, 255))
 local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.27, 0.76), Color3.fromRGB(195, 111, 255))
+local staticArea = makeParticleArea("Static stars (no tweens)", UDim2.fromScale(0.5, 0.76), Color3.fromRGB(84, 193, 208))
 local rainbowArea = makeParticleArea("Rainbow confetti", UDim2.fromScale(0.73, 0.76), Color3.fromRGB(106, 86, 228))
 
 local embers = GuiParticleService.start({
@@ -155,6 +156,27 @@ local rainbow = GuiParticleService.start({
 	ZOffset = 3,
 })
 
+-- This converted emitter uses single-value sequences, so its particles do not create visual tweens.
+local staticSource = Instance.new("ParticleEmitter")
+staticSource.Name = "StaticStarsSource"
+staticSource.Texture = PARTICLE_TEXTURE
+staticSource.Rate = 12
+staticSource.Lifetime = NumberRange.new(2.5, 4)
+staticSource.Speed = NumberRange.new(18, 36)
+staticSource.EmissionDirection = Enum.NormalId.Top
+staticSource.SpreadAngle = Vector2.new(110, 0)
+staticSource.Acceleration = Vector3.new(0, 45, 0)
+staticSource.Drag = 0.2
+staticSource.Size = NumberSequence.new(9)
+staticSource.Transparency = NumberSequence.new(0.15)
+staticSource.Color = ColorSequence.new(Color3.fromRGB(153, 240, 255))
+staticSource.Rotation = NumberRange.new(0, 0)
+staticSource.RotSpeed = NumberRange.new(0, 0)
+staticSource.ZOffset = 3
+staticSource.Parent = staticArea
+
+local staticStars = GuiParticleService.fromEmitter(staticSource, nil, true)
+
 -- This emitter is converted to a 2D GUI emitter by GuiParticleService.fromEmitter.
 local sparksSource = Instance.new("ParticleEmitter")
 sparksSource.Name = "SparksSource"
@@ -188,3 +210,4 @@ embers:Emit(20)
 snow:Emit(16)
 sparks:Emit(20)
 rainbow:Emit(16)
+staticStars:Emit(16)
