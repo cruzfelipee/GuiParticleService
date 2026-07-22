@@ -34,7 +34,7 @@ subtitle.Size = UDim2.new(1, -48, 0, 28)
 subtitle.Position = UDim2.fromOffset(24, 68)
 subtitle.BackgroundTransparency = 1
 subtitle.Font = Enum.Font.Gotham
-subtitle.Text = "Three continuously emitting GUI particle effects"
+subtitle.Text = "Five continuously emitting GUI particle effects"
 subtitle.TextColor3 = Color3.fromRGB(158, 170, 200)
 subtitle.TextSize = 16
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -70,9 +70,75 @@ local function makeParticleArea(name: string, position: UDim2, color: Color3): F
 	return area
 end
 
-local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.2, 0.57), Color3.fromRGB(244, 129, 45))
-local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.5, 0.57), Color3.fromRGB(98, 184, 255))
-local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.8, 0.57), Color3.fromRGB(195, 111, 255))
+local function addEmitterControls(area: Frame, emitter)
+	local clearButton = Instance.new("TextButton")
+	clearButton.Size = UDim2.new(1, -24, 0, 28)
+	clearButton.Position = UDim2.fromOffset(12, 168)
+	clearButton.BackgroundColor3 = Color3.fromRGB(76, 49, 68)
+	clearButton.BorderSizePixel = 0
+	clearButton.Font = Enum.Font.GothamMedium
+	clearButton.Text = "Clear"
+	clearButton.TextColor3 = Color3.fromRGB(255, 232, 240)
+	clearButton.TextSize = 14
+	clearButton.ZIndex = 3
+	clearButton.Parent = area
+
+	local clearCorner = Instance.new("UICorner")
+	clearCorner.CornerRadius = UDim.new(0, 6)
+	clearCorner.Parent = clearButton
+
+	local countInput = Instance.new("TextBox")
+	countInput.Size = UDim2.new(1, -108, 0, 32)
+	countInput.Position = UDim2.fromOffset(12, 204)
+	countInput.BackgroundColor3 = Color3.fromRGB(35, 39, 57)
+	countInput.BorderSizePixel = 0
+	countInput.ClearTextOnFocus = false
+	countInput.Font = Enum.Font.Gotham
+	countInput.PlaceholderText = "Particle count"
+	countInput.PlaceholderColor3 = Color3.fromRGB(132, 140, 166)
+	countInput.Text = "20"
+	countInput.TextColor3 = Color3.fromRGB(240, 243, 255)
+	countInput.TextSize = 14
+	countInput.ZIndex = 3
+	countInput.Parent = area
+
+	local inputCorner = Instance.new("UICorner")
+	inputCorner.CornerRadius = UDim.new(0, 6)
+	inputCorner.Parent = countInput
+
+	local emitButton = Instance.new("TextButton")
+	emitButton.Size = UDim2.fromOffset(90, 32)
+	emitButton.Position = UDim2.new(1, -102, 0, 204)
+	emitButton.BackgroundColor3 = Color3.fromRGB(68, 102, 184)
+	emitButton.BorderSizePixel = 0
+	emitButton.Font = Enum.Font.GothamMedium
+	emitButton.Text = "Emit"
+	emitButton.TextColor3 = Color3.fromRGB(242, 246, 255)
+	emitButton.TextSize = 14
+	emitButton.ZIndex = 3
+	emitButton.Parent = area
+
+	local emitCorner = Instance.new("UICorner")
+	emitCorner.CornerRadius = UDim.new(0, 6)
+	emitCorner.Parent = emitButton
+
+	clearButton.Activated:Connect(function()
+		emitter:Clear()
+	end)
+
+	emitButton.Activated:Connect(function()
+		local count = tonumber(countInput.Text)
+		if count and count > 0 then
+			emitter:Emit(math.floor(count))
+		end
+	end)
+end
+
+local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.27, 0.4), Color3.fromRGB(244, 129, 45))
+local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.73, 0.4), Color3.fromRGB(98, 184, 255))
+local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.27, 0.76), Color3.fromRGB(195, 111, 255))
+local staticArea = makeParticleArea("Static stars (no tweens)", UDim2.fromScale(0.5, 0.76), Color3.fromRGB(84, 193, 208))
+local rainbowArea = makeParticleArea("Rainbow confetti", UDim2.fromScale(0.73, 0.76), Color3.fromRGB(106, 86, 228))
 
 local embers = GuiParticleService.start({
 	Parent = embersArea,
@@ -125,6 +191,56 @@ local snow = GuiParticleService.start({
 	ZOffset = 3,
 })
 
+local rainbow = GuiParticleService.start({
+	Parent = rainbowArea,
+	Texture = PARTICLE_TEXTURE,
+	Rate = 100,
+	Lifetime = NumberRange.new(1.5, 2),
+	Speed = NumberRange.new(70, 130),
+	EmissionDirection = Enum.NormalId.Top,
+	SpreadAngle = 130,
+	Acceleration = Vector2.new(0, 190),
+	Drag = 1,
+	Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 30),
+		NumberSequenceKeypoint.new(0.8, 20),
+		NumberSequenceKeypoint.new(1, 0),
+	}),
+	Transparency = NumberSequence.new(0),
+	Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+		ColorSequenceKeypoint.new(1 / 6, Color3.fromRGB(255, 255, 0)),
+		ColorSequenceKeypoint.new(2 / 6, Color3.fromRGB(0, 255, 0)),
+		ColorSequenceKeypoint.new(3 / 6, Color3.fromRGB(0, 222, 255)),
+		ColorSequenceKeypoint.new(4 / 6, Color3.fromRGB(0, 0, 255)),
+		ColorSequenceKeypoint.new(5 / 6, Color3.fromRGB(255, 0, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+	}),
+	RotSpeed = NumberRange.new(-240, 240),
+	ZOffset = 3,
+})
+
+-- This converted emitter uses single-value sequences, so its particles do not create visual tweens.
+local staticSource = Instance.new("ParticleEmitter")
+staticSource.Name = "StaticStarsSource"
+staticSource.Texture = PARTICLE_TEXTURE
+staticSource.Rate = 12
+staticSource.Lifetime = NumberRange.new(2.5, 4)
+staticSource.Speed = NumberRange.new(18, 36)
+staticSource.EmissionDirection = Enum.NormalId.Top
+staticSource.SpreadAngle = Vector2.new(110, 0)
+staticSource.Acceleration = Vector3.new(0, 45, 0)
+staticSource.Drag = 0.2
+staticSource.Size = NumberSequence.new(9)
+staticSource.Transparency = NumberSequence.new(0.15)
+staticSource.Color = ColorSequence.new(Color3.fromRGB(153, 240, 255))
+staticSource.Rotation = NumberRange.new(0, 0)
+staticSource.RotSpeed = NumberRange.new(0, 0)
+staticSource.ZOffset = 3
+staticSource.Parent = staticArea
+
+local staticStars = GuiParticleService.fromEmitter(staticSource, nil, true)
+
 -- This emitter is converted to a 2D GUI emitter by GuiParticleService.fromEmitter.
 local sparksSource = Instance.new("ParticleEmitter")
 sparksSource.Name = "SparksSource"
@@ -153,7 +269,15 @@ sparksSource.Parent = sparksArea
 
 local sparks = GuiParticleService.fromEmitter(sparksSource, nil, true)
 
+addEmitterControls(embersArea, embers)
+addEmitterControls(snowArea, snow)
+addEmitterControls(sparksArea, sparks)
+addEmitterControls(staticArea, staticStars)
+addEmitterControls(rainbowArea, rainbow)
+
 -- Add a visible burst immediately, so the demo has particles before the first rate-based emissions.
 embers:Emit(20)
 snow:Emit(16)
 sparks:Emit(20)
+rainbow:Emit(16)
+staticStars:Emit(16)
