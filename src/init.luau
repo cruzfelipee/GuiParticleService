@@ -504,6 +504,51 @@ function GuiParticleService.fromEmitter(
 	return emitter
 end
 
+--[[
+	Counts the number of particles currently being rendered by all emitters
+
+	@return The number of particles currently rendered in
+]]
+function GuiParticleService.getRenderedParticlesCount()
+	local count = 0
+
+	for _, v in emitters do
+		count += #v.renderedParticles
+	end
+
+	return count
+end
+
+--[[
+	Counts the number of particles currently pooled of all emitters
+
+	@return The number of particles pooled
+]]
+function GuiParticleService.getPooledParticlesCount()
+	local count = 0
+
+	for _, v in emitters do
+		count += #v.polledParticles
+	end
+
+	return count
+end
+
+--[[
+	Counts the existing particles of all emitters, including both rendered and pooled particles
+
+	@return The total number of particles
+]]
+function GuiParticleService.getTotalParticlesCount()
+	local count = 0
+
+	for _, v in emitters do
+		count += #v.renderedParticles + #v.polledParticles
+	end
+
+	return count
+end
+
 --Controls the emission and updating of all emitters.
 RunService:BindToRenderStep("UpdateGuiParticleServiceParticles", Enum.RenderPriority.Last.Value, function(delta: number)
 	for _, v in emitters do
