@@ -336,12 +336,7 @@ RunService.RenderStepped:Connect(function(delta)
 	fpsLabel.Text = string.format("FPS: %d", math.round(metricsFrames / metricsElapsed))
 	particleCountLabel.Text = string.format(
 		"Particles: %d",
-		#embers.renderedParticles
-			+ #rotating.renderedParticles
-			+ #snow.renderedParticles
-			+ #sparks.renderedParticles
-			+ #staticStars.renderedParticles
-			+ #rainbow.renderedParticles
+		GuiParticleService.getTotalParticlesCount()
 	)
 	metricsElapsed -= 0.25
 	metricsFrames = 0

@@ -8,52 +8,11 @@ const VELOCITY_ANGLES = {
 const DRAG_EPSILON = 1e-6 --minimum drag magnitude to avoid divisions with numbers close to zero, which can cause large displacements due to floating point precision
 
 const RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
-const Utils = require(script.Utils)
-
-type EmitterSettings = {
-	Acceleration: Vector2,
-	Color: ColorSequence,
-	Drag: number,
-	EmissionDirection: Enum.NormalId,
-	Enabled: boolean,
-
-	--TODO: Flipbooks
-	-- FlipbookBlendFrames: boolean,
-	-- FlipbookFramerate: NumberRange,
-	-- FlipbookIncompatible: string,
-	-- FlipbookLayout: Enum.ParticleFlipbookLayout,
-	-- FlipbookMode: Enum.ParticleFlipbookMode,
-	-- FlipbookSizeX: number,
-	-- FlipbookSizeY: number,
-	-- FlipbookStartRandom: boolean,
-
-	Lifetime: NumberRange,
-	LockedToPart: boolean,
-	Orientation: Enum.ParticleOrientation, --TODO
-	Rate: number,
-	Rotation: NumberRange,
-	RotSpeed: NumberRange,
-
-	--TODO: Emitter shape
-	-- Shape: Enum.ParticleEmitterShape,
-	-- ShapeInOut: Enum.ParticleEmitterShapeInOut,
-	-- ShapePartial: number,
-	-- ShapeStyle: Enum.ParticleEmitterShapeStyle,
-
-	Size: NumberSequence,
-	Speed: NumberRange,
-	SpreadAngle: number,
-	Squash: NumberSequence, --TODO
-	Texture: string,
-	TimeScale: number, --TODO
-	Transparency: NumberSequence,
-
-	ZOffset: number,
-
-	Parent: GuiBase2d,
-}
+local InterpolationUtils = require(script.InterpolationUtils)
+const TweenParticleUtils = require(script.TweenParticleUtils)
+const Types = require(script.Types)
+const VectorUtils = require(script.VectorUtils)
 
 type BaseEmitterParameters = {
 	Acceleration: Vector2?,
@@ -102,30 +61,7 @@ type ParentedEmitterParameters = BaseEmitterParameters & {
 	Parent: GuiBase2d,
 }
 
-type Particle = {
-	startVelocity: Vector2,
-	startPosition: Vector2,
-
-	spawnTime: number,
-	lifetime: number,
-	currentTween: Tween?,
-
-	particleImage: ImageLabel,
-}
-
-type Emitter = {
-	properties: EmitterSettings,
-	renderedParticles: { Particle },
-	polledParticles: { ImageLabel },
-	emitTimeAccumulator: number,
-
-	Emit: (self: Emitter, count: number) -> (),
-	Clear: (self: Emitter) -> (),
-	Destroy: (self: Emitter) -> (),
-	StepAll: (self: Emitter) -> (),
-}
-
-local emitters: { Emitter } = {}
+local emitters: { Types.Emitter } = {}
 
 --[[
 	Calculates the position of a particle at a given time, based on its motion parameters
@@ -152,124 +88,6 @@ const function getPosition(
 	return startPosition + velocityDisplacement + accelerationDisplacement
 end
 
-type ParticleTweenGoal = {
-	ImageColor3: Color3,
-	ImageTransparency: number,
-	Size: UDim2,
-	Rotation: number,
-	[string]: any,
-}
-
---[[
-	Determine the state of the particle properties at each keypoint in the lifetime of the particle, based on the emitter's properties.
-]]
-const function getParticleTweenGoals(emitter: Emitter, lifetime: number)
-	local transparencyEnvelope = math.random()
-	local sizeEnvelope = math.random()
-	local startRotation = Utils.getNumberInRange(emitter.properties.Rotation, math.random())
-	local rotationSpeed = Utils.getNumberInRange(emitter.properties.RotSpeed, math.random())
-
-	local goals: { [number]: ParticleTweenGoal } = {}
-
-	for _, colorKeypoint in emitter.properties.Color.Keypoints do
-		local size = Utils.getNumberAtSequenceTime(emitter.properties.Size, colorKeypoint.Time, sizeEnvelope)
-		goals[colorKeypoint.Time] = {
-			ImageColor3 = colorKeypoint.Value,
-			ImageTransparency = Utils.getNumberAtSequenceTime(
-				emitter.properties.Transparency,
-				colorKeypoint.Time,
-				transparencyEnvelope
-			),
-			Size = UDim2.fromOffset(size, size),
-			Rotation = startRotation + rotationSpeed * colorKeypoint.Time * lifetime,
-		}
-	end
-
-	for _, transparencyKeypoint in emitter.properties.Transparency.Keypoints do
-		local size = Utils.getNumberAtSequenceTime(emitter.properties.Size, transparencyKeypoint.Time, sizeEnvelope)
-		goals[transparencyKeypoint.Time] = {
-			ImageColor3 = Utils.getColorAtSequenceTime(emitter.properties.Color, transparencyKeypoint.Time),
-			ImageTransparency = transparencyKeypoint.Value,
-			Size = UDim2.fromOffset(size, size),
-			Rotation = startRotation + rotationSpeed * transparencyKeypoint.Time * lifetime,
-		}
-	end
-
-	for _, sizeKeypoint in emitter.properties.Size.Keypoints do
-		goals[sizeKeypoint.Time] = {
-			ImageColor3 = Utils.getColorAtSequenceTime(emitter.properties.Color, sizeKeypoint.Time),
-			ImageTransparency = Utils.getNumberAtSequenceTime(
-				emitter.properties.Transparency,
-				sizeKeypoint.Time,
-				transparencyEnvelope
-			),
-			Size = UDim2.fromOffset(sizeKeypoint.Value, sizeKeypoint.Value),
-			Rotation = startRotation + rotationSpeed * sizeKeypoint.Time * lifetime,
-		}
-	end
-
-	return goals
-end
-
---[[
-	Creates a single tween chain to control some particle properties over its lifetime.
-	The tween chain needs to be recreated for every particle since lifetime and envelopes are randomized per particle.
-]]
-const function getParticleTween(emitter: Emitter, particle: Particle): Tween?
-	local image = particle.particleImage
-
-	debug.profilebegin("getParticleTweenGoals")
-	local goals = getParticleTweenGoals(emitter, particle.lifetime)
-	debug.profileend()
-
-	local times = {}
-	for time in goals do
-		table.insert(times, time)
-	end
-	table.sort(times)
-
-	local firstTween: Tween
-	local lastTween: Tween
-
-	for i, currentTime in times do
-		local currentGoal = goals[currentTime]
-
-		if i == 1 then --sets properties to start
-			image.ImageTransparency = currentGoal.ImageTransparency
-			image.Size = currentGoal.Size
-			image.Rotation = currentGoal.Rotation
-			image.ImageColor3 = currentGoal.ImageColor3
-
-			continue
-		end
-
-		local lastTweenTime = times[i - 1]
-
-		local currentTween = TweenService:Create(
-			image,
-			TweenInfo.new((currentTime - lastTweenTime) * particle.lifetime, Enum.EasingStyle.Linear),
-			currentGoal
-		) --seems to be the bottleneck of performance,
-
-		firstTween = firstTween or currentTween
-
-		if lastTween then
-			lastTween.Completed:Once(function(playbackState)
-				if playbackState == Enum.PlaybackState.Cancelled then
-					return
-				end
-
-				particle.currentTween = currentTween
-				currentTween:Play()
-			end)
-		end
-
-		lastTween = currentTween
-	end
-
-	return firstTween
-end
-
 local GuiParticleService = {}
 
 --[[
@@ -278,8 +96,8 @@ local GuiParticleService = {}
 	@param emitterParameters The parameters to use for the emitter.
 	@return An Emitter object that can be used to control the emitter.
 ]]
-function GuiParticleService.start(emitterParameters: ParentedEmitterParameters): Emitter
-	local emitter: Emitter = {
+function GuiParticleService.start(emitterParameters: ParentedEmitterParameters): Types.Emitter
+	local emitter: Types.Emitter = {
 		properties = {
 			Acceleration = emitterParameters.Acceleration or Vector2.new(0, 0),
 			Color = emitterParameters.Color or ColorSequence.new(Color3.fromRGB(255, 255, 255)),
@@ -312,8 +130,17 @@ function GuiParticleService.start(emitterParameters: ParentedEmitterParameters):
 		emitTimeAccumulator = 0,
 
 		Emit = function(self, count)
-			local absolutePosition = emitterParameters.Parent.AbsolutePosition
-			local absoluteSize = emitterParameters.Parent.AbsoluteSize
+			local parent = self.properties.Parent
+			local absoluteSize = parent.AbsoluteSize
+			local absolutePosition = parent.AbsolutePosition
+			local absoluteRotation = parent.AbsoluteRotation
+
+			local emissionAngle = VELOCITY_ANGLES[self.properties.EmissionDirection]
+			assert(emissionAngle, "EmissionDirection must be Top, Bottom, Left or Right")
+
+			if not self.properties.LockedToPart then
+				emissionAngle += math.rad(absoluteRotation)
+			end
 
 			for _ = 1, count do
 				local image = table.remove(self.polledParticles)
@@ -333,28 +160,33 @@ function GuiParticleService.start(emitterParameters: ParentedEmitterParameters):
 
 				assert(image)
 
-				local velocityAngle = VELOCITY_ANGLES[self.properties.EmissionDirection]
-				assert(velocityAngle, "EmissionDirection must be Top, Bottom, Left or Right")
+				local speed = InterpolationUtils.getNumberInRange(self.properties.Speed, math.random())
+				local spreadAngle = math.rad(self.properties.SpreadAngle * (math.random() - 0.5))
 
-				local particle: Particle = {
-					startPosition = Vector2.new(math.random() * absoluteSize.X, math.random() * absoluteSize.Y)
-						+ (if self.properties.LockedToPart then Vector2.zero else absolutePosition),
+				local localStartPosition = Vector2.new(math.random() * absoluteSize.X, math.random() * absoluteSize.Y)
+				local particle: Types.Particle = {
+					startPosition = if self.properties.LockedToPart
+						then localStartPosition
+						else VectorUtils.getScreenPosition(
+							localStartPosition,
+							absoluteSize,
+							absolutePosition,
+							absoluteRotation
+						),
 					startVelocity = Vector2.new(
-						Utils.getNumberInRange(self.properties.Speed, math.random())
-							* math.cos(velocityAngle + math.rad(self.properties.SpreadAngle * (math.random() - 0.5))),
-						Utils.getNumberInRange(self.properties.Speed, math.random())
-							* math.sin(velocityAngle + math.rad(self.properties.SpreadAngle * (math.random() - 0.5)))
+						speed * math.cos(emissionAngle + spreadAngle),
+						speed * math.sin(emissionAngle + spreadAngle)
 					),
 					spawnTime = tick(),
 					particleImage = image,
-					lifetime = Utils.getNumberInRange(self.properties.Lifetime, math.random()),
+					lifetime = InterpolationUtils.getNumberInRange(self.properties.Lifetime, math.random()),
 					currentTween = nil,
 				}
 
 				table.insert(self.renderedParticles, particle)
 
 				debug.profilebegin("getParticleTween")
-				local tween = getParticleTween(self, particle)
+				local tween = TweenParticleUtils.getParticleTween(self, particle)
 				if tween then
 					particle.currentTween = tween
 					tween:Play()
@@ -396,7 +228,9 @@ function GuiParticleService.start(emitterParameters: ParentedEmitterParameters):
 		end,
 
 		StepAll = function(self)
-			local absolutePosition = emitterParameters.Parent.AbsolutePosition
+			local absoluteSize = self.properties.Parent.AbsoluteSize
+			local absolutePosition = self.properties.Parent.AbsolutePosition
+			local absoluteRotation = self.properties.Parent.AbsoluteRotation
 
 			for i, v in self.renderedParticles do
 				local timeAlive = tick() * self.properties.TimeScale - v.spawnTime * self.properties.TimeScale
@@ -421,8 +255,8 @@ function GuiParticleService.start(emitterParameters: ParentedEmitterParameters):
 				if self.properties.LockedToPart then
 					v.particleImage.Position = UDim2.fromOffset(position.X, position.Y)
 				else
-					v.particleImage.Position = UDim2.fromOffset(position.X, position.Y)
-						- UDim2.fromOffset(absolutePosition.X, absolutePosition.Y)
+					local localPosition = VectorUtils.getLocalPosition(position, absoluteSize, absolutePosition, absoluteRotation)
+					v.particleImage.Position = UDim2.fromOffset(localPosition.X, localPosition.Y)
 				end
 			end
 		end,
@@ -445,7 +279,7 @@ function GuiParticleService.fromEmitter(
 	particleEmitter: ParticleEmitter,
 	_emitterParameters: OptionalParentEmitterParameters?,
 	bound: boolean?
-): Emitter
+): Types.Emitter
 	assert(
 		particleEmitter.Parent,
 		"Particle Emitter must be parented to a GuiBase2d to be converted into a GuiParticleService Emitter"
