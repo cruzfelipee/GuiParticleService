@@ -55,7 +55,7 @@ type EmitterSettings = {
 	Parent: GuiBase2d,
 }
 
-type EmitterParameters = {
+type BaseEmitterParameters = {
 	Acceleration: Vector2?,
 	Color: ColorSequence?,
 	Drag: number?,
@@ -92,7 +92,13 @@ type EmitterParameters = {
 	Transparency: NumberSequence?,
 
 	ZOffset: number?,
+}
 
+type OptionalParentEmitterParameters = BaseEmitterParameters & {
+	Parent: GuiBase2d?,
+}
+
+type ParentedEmitterParameters = BaseEmitterParameters & {
 	Parent: GuiBase2d,
 }
 
@@ -272,7 +278,7 @@ local GuiParticleService = {}
 	@param emitterParameters The parameters to use for the emitter.
 	@return An Emitter object that can be used to control the emitter.
 ]]
-function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
+function GuiParticleService.start(emitterParameters: ParentedEmitterParameters): Emitter
 	local emitter: Emitter = {
 		properties = {
 			Acceleration = emitterParameters.Acceleration or Vector2.new(0, 0),
@@ -315,11 +321,13 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 					if #self.renderedParticles > 0 then --clones an existing particle instead of creating a new one from scratch
 						image = self.renderedParticles[1].particleImage:Clone()
 					else
-						image = Instance.new("ImageLabel")
-						image.Image = self.properties.Texture
-						image.BackgroundTransparency = 1
-						image.AnchorPoint = Vector2.new(0.5, 0.5)
-						image.ZIndex = self.properties.ZOffset
+						local newImage = Instance.new("ImageLabel")
+						newImage.Image = self.properties.Texture
+						newImage.BackgroundTransparency = 1
+						newImage.AnchorPoint = Vector2.new(0.5, 0.5)
+						newImage.ZIndex = self.properties.ZOffset
+
+						image = newImage
 					end
 				end
 
@@ -435,7 +443,7 @@ end
 ]]
 function GuiParticleService.fromEmitter(
 	particleEmitter: ParticleEmitter,
-	_emitterParameters: EmitterParameters?,
+	_emitterParameters: OptionalParentEmitterParameters?,
 	bound: boolean?
 ): Emitter
 	assert(
@@ -447,9 +455,7 @@ function GuiParticleService.fromEmitter(
 		"Particle Emitter must be parented to a GuiBase2d to be converted into a GuiParticleService Emitter"
 	)
 
-	local emitterParameters: EmitterParameters = _emitterParameters or {
-		Parent = particleEmitter.Parent,
-	}
+	local emitterParameters: OptionalParentEmitterParameters = _emitterParameters or {}
 
 	local emitter = GuiParticleService.start({
 		Acceleration = emitterParameters.Acceleration
@@ -478,7 +484,7 @@ function GuiParticleService.fromEmitter(
 
 		ZOffset = emitterParameters.ZOffset or particleEmitter.ZOffset,
 
-		Parent = emitterParameters.Parent,
+		Parent = emitterParameters.Parent or particleEmitter.Parent,
 	})
 
 	if bound then
