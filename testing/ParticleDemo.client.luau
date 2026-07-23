@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local GuiParticleService = require(ReplicatedStorage.GuiParticleService)
 
@@ -34,7 +35,7 @@ subtitle.Size = UDim2.new(1, -48, 0, 28)
 subtitle.Position = UDim2.fromOffset(24, 68)
 subtitle.BackgroundTransparency = 1
 subtitle.Font = Enum.Font.Gotham
-subtitle.Text = "Five continuously emitting GUI particle effects"
+subtitle.Text = "Six continuously emitting GUI particle effects"
 subtitle.TextColor3 = Color3.fromRGB(158, 170, 200)
 subtitle.TextSize = 16
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -135,6 +136,7 @@ local function addEmitterControls(area: Frame, emitter)
 end
 
 local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.27, 0.4), Color3.fromRGB(244, 129, 45))
+local rotatingArea = makeParticleArea("Rotating sparks", UDim2.fromScale(0.5, 0.4), Color3.fromRGB(106, 86, 228))
 local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.73, 0.4), Color3.fromRGB(98, 184, 255))
 local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.27, 0.76), Color3.fromRGB(195, 111, 255))
 local staticArea = makeParticleArea("Static stars (no tweens)", UDim2.fromScale(0.5, 0.76), Color3.fromRGB(84, 193, 208))
@@ -164,6 +166,28 @@ local embers = GuiParticleService.start({
 	RotSpeed = NumberRange.new(-140, 140),
 	ZOffset = 3,
 })
+
+local rotating = GuiParticleService.start({
+	Parent = rotatingArea,
+	Texture = PARTICLE_TEXTURE,
+	Rate = 30,
+	Lifetime = NumberRange.new(2),
+	Speed = NumberRange.new(80),
+	EmissionDirection = Enum.NormalId.Top,
+	SpreadAngle = 0,
+	Acceleration = Vector2.zero,
+	Size = NumberSequence.new(10),
+	Transparency = NumberSequence.new(0),
+	Color = ColorSequence.new(Color3.fromRGB(213, 166, 255), Color3.fromRGB(91, 74, 225)),
+	RotSpeed = NumberRange.new(-180, 180),
+	ZOffset = 3,
+})
+
+TweenService:Create(
+	rotatingArea,
+	TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1),
+	{ Rotation = 360 }
+):Play()
 
 local snow = GuiParticleService.start({
 	Parent = snowArea,
@@ -270,6 +294,7 @@ sparksSource.Parent = sparksArea
 local sparks = GuiParticleService.fromEmitter(sparksSource, nil, true)
 
 addEmitterControls(embersArea, embers)
+addEmitterControls(rotatingArea, rotating)
 addEmitterControls(snowArea, snow)
 addEmitterControls(sparksArea, sparks)
 addEmitterControls(staticArea, staticStars)
@@ -277,6 +302,7 @@ addEmitterControls(rainbowArea, rainbow)
 
 -- Add a visible burst immediately, so the demo has particles before the first rate-based emissions.
 embers:Emit(20)
+rotating:Emit(16)
 snow:Emit(16)
 sparks:Emit(20)
 rainbow:Emit(16)
