@@ -119,11 +119,6 @@ type Emitter = {
 	StepAll: (self: Emitter) -> (),
 }
 
---Storage for polled image instances, so they can be later reused instead of destroyed and recreated.
-local polledParticlesFolder = Instance.new("Folder")
-polledParticlesFolder.Name = "PolledParticles"
-polledParticlesFolder.Parent = script
-
 local emitters: { Emitter } = {}
 
 --[[
@@ -216,7 +211,10 @@ end
 ]]
 const function getParticleTween(emitter: Emitter, particle: Particle): Tween?
 	local image = particle.particleImage
+
+	debug.profilebegin("getParticleTweenGoals")
 	local goals = getParticleTweenGoals(emitter, particle.lifetime)
+	debug.profileend()
 
 	local times = {}
 	for time in goals do
@@ -347,12 +345,15 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 
 				table.insert(self.renderedParticles, particle)
 
+				debug.profilebegin("getParticleTween")
 				local tween = getParticleTween(self, particle)
 				if tween then
 					particle.currentTween = tween
 					tween:Play()
 				end
+				debug.profileend()
 
+				image.Visible = true
 				image.Parent = self.properties.Parent
 			end
 		end,
@@ -366,7 +367,7 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 
 				table.insert(self.polledParticles, v.particleImage)
 
-				v.particleImage.Parent = polledParticlesFolder
+				v.particleImage.Visible = false
 			end
 
 			table.clear(self.renderedParticles)
@@ -395,7 +396,7 @@ function GuiParticleService.start(emitterParameters: EmitterParameters): Emitter
 				if timeAlive >= v.lifetime then
 					table.insert(self.polledParticles, v.particleImage)
 
-					v.particleImage.Parent = polledParticlesFolder
+					v.particleImage.Visible = false
 
 					table.remove(self.renderedParticles, i)
 					continue
