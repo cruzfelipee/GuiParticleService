@@ -25,7 +25,8 @@ function TweenParticleUtils.getParticleTweenGoals(emitter: Types.Emitter, lifeti
 	local goals: { [number]: ParticleTweenGoal } = {}
 
 	for _, colorKeypoint in emitter.properties.Color.Keypoints do
-		local size = InterpolationUtils.getNumberAtSequenceTime(emitter.properties.Size, colorKeypoint.Time, sizeEnvelope)
+		local size =
+			InterpolationUtils.getNumberAtSequenceTime(emitter.properties.Size, colorKeypoint.Time, sizeEnvelope)
 		goals[colorKeypoint.Time] = {
 			ImageColor3 = colorKeypoint.Value,
 			ImageTransparency = InterpolationUtils.getNumberAtSequenceTime(
@@ -39,9 +40,13 @@ function TweenParticleUtils.getParticleTweenGoals(emitter: Types.Emitter, lifeti
 	end
 
 	for _, transparencyKeypoint in emitter.properties.Transparency.Keypoints do
-		local size = InterpolationUtils.getNumberAtSequenceTime(emitter.properties.Size, transparencyKeypoint.Time, sizeEnvelope)
+		local size =
+			InterpolationUtils.getNumberAtSequenceTime(emitter.properties.Size, transparencyKeypoint.Time, sizeEnvelope)
 		goals[transparencyKeypoint.Time] = {
-			ImageColor3 = InterpolationUtils.getColorAtSequenceTime(emitter.properties.Color, transparencyKeypoint.Time),
+			ImageColor3 = InterpolationUtils.getColorAtSequenceTime(
+				emitter.properties.Color,
+				transparencyKeypoint.Time
+			),
 			ImageTransparency = transparencyKeypoint.Value,
 			Size = UDim2.fromOffset(size, size),
 			Rotation = startRotation + rotationSpeed * transparencyKeypoint.Time * lifetime,

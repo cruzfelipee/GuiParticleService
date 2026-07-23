@@ -255,7 +255,8 @@ function GuiParticleService.start(emitterParameters: ParentedEmitterParameters):
 				if self.properties.LockedToPart then
 					v.particleImage.Position = UDim2.fromOffset(position.X, position.Y)
 				else
-					local localPosition = VectorUtils.getLocalPosition(position, absoluteSize, absolutePosition, absoluteRotation)
+					local localPosition =
+						VectorUtils.getLocalPosition(position, absoluteSize, absolutePosition, absoluteRotation)
 					v.particleImage.Position = UDim2.fromOffset(localPosition.X, localPosition.Y)
 				end
 			end
