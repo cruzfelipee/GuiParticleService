@@ -45,7 +45,7 @@ local GuiParticleService = require(ReplicatedStorage.Packages.GuiParticleService
 
 ### Manual installation
 
-Copy the contents of `src` into your project and require `init.luau` as a ModuleScript. Keep `Utils.luau` as a child/sibling ModuleScript named `Utils`, since the main module requires `script.Utils`.
+Download `GuiParticleService.rbxm` from the [latest GitHub release](https://github.com/cruzfelipee/GuiParticleService/releases), then import the model into Roblox Studio and require its `GuiParticleService` ModuleScript.
 
 ## Usage
 
