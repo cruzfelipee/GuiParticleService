@@ -1,7 +1,7 @@
 [package]
 name = "cruzfelipee/guiparticleservice"
 description = "UI Particle Library focused on ease of use and similarity to the default 3D Particle Emitter"
-version = "0.3.0"
+version = "0.4.0"
 license = "MIT"
 authors = ["cruzfelipee"]
 realm = "shared"
