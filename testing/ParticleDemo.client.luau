@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local GuiParticleService = require(ReplicatedStorage.GuiParticleService)
@@ -40,6 +41,28 @@ subtitle.TextColor3 = Color3.fromRGB(158, 170, 200)
 subtitle.TextSize = 16
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
 subtitle.Parent = background
+
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.fromOffset(120, 24)
+fpsLabel.Position = UDim2.fromOffset(24, 98)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Font = Enum.Font.GothamMedium
+fpsLabel.Text = "FPS: --"
+fpsLabel.TextColor3 = Color3.fromRGB(142, 224, 184)
+fpsLabel.TextSize = 14
+fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+fpsLabel.Parent = background
+
+local particleCountLabel = Instance.new("TextLabel")
+particleCountLabel.Size = UDim2.fromOffset(190, 24)
+particleCountLabel.Position = UDim2.fromOffset(150, 98)
+particleCountLabel.BackgroundTransparency = 1
+particleCountLabel.Font = Enum.Font.GothamMedium
+particleCountLabel.Text = "Particles: --"
+particleCountLabel.TextColor3 = Color3.fromRGB(180, 191, 255)
+particleCountLabel.TextSize = 14
+particleCountLabel.TextXAlignment = Enum.TextXAlignment.Left
+particleCountLabel.Parent = background
 
 local function makeParticleArea(name: string, position: UDim2, color: Color3): Frame
 	local area = Instance.new("Frame")
@@ -139,7 +162,8 @@ local embersArea = makeParticleArea("Rising embers", UDim2.fromScale(0.27, 0.4),
 local rotatingArea = makeParticleArea("Rotating sparks", UDim2.fromScale(0.5, 0.4), Color3.fromRGB(106, 86, 228))
 local snowArea = makeParticleArea("Falling snow", UDim2.fromScale(0.73, 0.4), Color3.fromRGB(98, 184, 255))
 local sparksArea = makeParticleArea("Side sparks", UDim2.fromScale(0.27, 0.76), Color3.fromRGB(195, 111, 255))
-local staticArea = makeParticleArea("Static stars (no tweens)", UDim2.fromScale(0.5, 0.76), Color3.fromRGB(84, 193, 208))
+local staticArea =
+	makeParticleArea("Static stars (no tweens)", UDim2.fromScale(0.5, 0.76), Color3.fromRGB(84, 193, 208))
 local rainbowArea = makeParticleArea("Rainbow confetti", UDim2.fromScale(0.73, 0.76), Color3.fromRGB(106, 86, 228))
 
 local embers = GuiParticleService.start({
@@ -183,11 +207,9 @@ local rotating = GuiParticleService.start({
 	ZOffset = 3,
 })
 
-TweenService:Create(
-	rotatingArea,
-	TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1),
-	{ Rotation = 360 }
-):Play()
+TweenService
+	:Create(rotatingArea, TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), { Rotation = 360 })
+	:Play()
 
 local snow = GuiParticleService.start({
 	Parent = snowArea,
@@ -299,6 +321,31 @@ addEmitterControls(snowArea, snow)
 addEmitterControls(sparksArea, sparks)
 addEmitterControls(staticArea, staticStars)
 addEmitterControls(rainbowArea, rainbow)
+
+local metricsElapsed = 0
+local metricsFrames = 0
+
+RunService.RenderStepped:Connect(function(delta)
+	metricsElapsed += delta
+	metricsFrames += 1
+
+	if metricsElapsed < 0.25 then
+		return
+	end
+
+	fpsLabel.Text = string.format("FPS: %d", math.round(metricsFrames / metricsElapsed))
+	particleCountLabel.Text = string.format(
+		"Particles: %d",
+		#embers.renderedParticles
+			+ #rotating.renderedParticles
+			+ #snow.renderedParticles
+			+ #sparks.renderedParticles
+			+ #staticStars.renderedParticles
+			+ #rainbow.renderedParticles
+	)
+	metricsElapsed -= 0.25
+	metricsFrames = 0
+end)
 
 -- Add a visible burst immediately, so the demo has particles before the first rate-based emissions.
 embers:Emit(20)
